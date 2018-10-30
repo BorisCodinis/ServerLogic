@@ -14,7 +14,6 @@ from mysql.connector import errorcode
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
 import uploader
-import stats
 
 
 auth = HTTPBasicAuth()
@@ -32,8 +31,10 @@ print("hier")
 @auth.get_password
 def get_pw(username):
 	data = request.authorization
+	print(str(data))
 	requestData = worker.getUserData(data)
 	DBdata = worker.executeQuery(requestData)
+	print(data.get('password'))
 	if worker.checkLogin(DBdata, requestData):
 		return data.get('password')
 	else:
@@ -76,7 +77,7 @@ def signup():
 		return jsonify(messege)
 
 
-@app.route("/up",methods=['GET'])
+@app.route("/upload",methods=['GET'])
 def upload():
 	mycursor = DB.cursor()
 	mycursor.execute("SELECT * FROM user;")
@@ -86,17 +87,16 @@ def upload():
 	mycursor.close()
 	return stru
 
-@app.route("/upload", methods = ['POST'])
+@app.route("/donation", methods = ['POST'])
 @auth.login_required
 def donation():
 	if request.method == "POST":
 		print("pictureupload")
-		print(request.authorization)
 		unArg = auth.username()
 		print ("username: " + unArg)
 		if 'file' not in request.files:
-			print("no file sent")
-			return "no file sent"
+        		print ("no file sent")
+			return ("no file sent")
 		else:
 			picFile = request.files['file']
 			if uploader.savePicture(picFile, unArg):
@@ -108,14 +108,7 @@ def donation():
 
 
 @app.route("/stats", methods=['GET'])
-@auth.login_required
 def getStats():
-	
-	unArg = auth.username()
-	personalSum = int(stats.getPersonalExpenseStat(unArg))
-	globalSum = int(stats.getGlobalExpanseStat()) 
-	
-	
 	return 1
 
 
