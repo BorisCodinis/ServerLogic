@@ -35,14 +35,14 @@ def executeQuery(datajson):
 	un = datajson.get('un')
 	pw = datajson.get('pw')
 	
-	query = "SELECT Username FROM user WHERE Username = '%s'" %(un,) #selectUsername
+	query = "SELECT Username FROM user WHERE Username = '%s'" %(un) #selectUsername
 	DBcursor.execute(query)
 	username = ""
 	for e in DBcursor:
 		username = str(e[0])
 	
 	
-	query = "SELECT Password FROM user WHERE Username = '%s'" %(un,) #selectUsername
+	query = "SELECT Password FROM user WHERE Username = '%s'" %(un) #selectUsername
 	DBcursor.execute(query)
 	password = ""
 	for e in DBcursor:
@@ -50,7 +50,9 @@ def executeQuery(datajson):
 	
 
 	DBcursor.close()
+	DBcursor.close()
 	data = {'un':username, 'pw': password}
+	print (data)
 	return data
 
 def checkLogin(dataDB, dataReq):
@@ -59,27 +61,29 @@ def checkLogin(dataDB, dataReq):
 	password = dataDB.get('pw')
 	unArg = dataReq.get('un')
 	pwArg = dataReq.get('pw')
+	print("hallo " + unArg)
 	if (unArg == username and bcrypt.checkpw(pwArg.encode('utf8'), password.encode('utf8'))): #username & pw abgleich
 		json = {"success": "true", "messege" : "login successful"} 
-		return json
+		return True
 	else:
 		
 		json = {"success": "false", "messege" : "password or username invalid"} 
-		return json
+		return False
 
 def checkUsername(query, data):
 	
+	print('-----------------------')
 	unArg = data.get('un')
 	pwArg = data.get('pw')
 	nameArg = data.get('name')
 	mailArg = data.get('email')
-	sexArg = data.get('sex')
 	DBcursor = DB.cursor()
 	DBcursor.execute(query)
 	for i in DBcursor:
 		sameUserCount = int(i[0])
 	if sameUserCount == 0:
-		query = "INSERT INTO user (Username, Password, first_name, email, sex) VALUES ('%s','%s','%s','%s','%s');" % (unArg, bcrypt.hashpw(pwArg.encode('utf8'), bcrypt.gensalt(14)).decode('utf8'), nameArg, mailArg, sexArg)  
+		query = "INSERT INTO user (Username, Password, first_name, email, sex) VALUES ('%s','%s','%s','%s','%s');" % (unArg, bcrypt.hashpw(pwArg.encode('utf8'), bcrypt.gensalt(14)).decode('utf8'), nameArg, mailArg, "f")  
+
 		print(query)
 		DBcursor.execute(query)
 		DB.commit()
@@ -90,6 +94,7 @@ def checkUsername(query, data):
 	elif sameUserCount > 0:
 		DBcursor.close()
 		print("signup failed")
+		print('--------------------------------')
 		return False
 
 	
@@ -108,18 +113,28 @@ def getUserID(user):
 
 
 def createDonationRecord(data):
-	
+	print('--------------------------')	
 	print("create donation record")
 	unArg = data.get('un')
 	uID = getUserID(unArg)
 	DBcursor = DB.cursor()
 	query = "INSERT INTO donation (userID, sum) VALUES ('%s','%s');"
-	values = (getUserID(unArg), 0)	
+	values = (uID, 0)	
 	DBcursor.execute(query, values)
-	print (DBcursor)
+	print(DBcursor)
 	DB.commit()
+	print('----')
+
+	query = "INSERT INTO expense (userID, sum) VALUES ('%s','%s');"
+	DBcursor.execute(query, values)
+	print(DBcursor)
+	DB.commit()
+	print("donation record comitted")
+
 	DBcursor.close()
 	print("donation record comitted")
+	print('---------------------------')
+
 
 
 def checkSignupData(data):
@@ -128,7 +143,6 @@ def checkSignupData(data):
 	pwArg = data.get('pw')
 	nameArg = data.get('name')
 	mailArg = data.get('email')
-	sexArg = data.get('sex')
 	query = "SELECT count(id) from user where (Username = '%s' OR email = '%s');" %(unArg, mailArg)
 	if checkUsername(query, data):
 		json = {"success": "true", "messege" : "signup succeeded"} 
@@ -138,6 +152,15 @@ def checkSignupData(data):
 		json = {"success": "false", "messege" : "signup failed"} 
 		return json
 
+def insertDonation(val, un):
+	DBcursor = DB.cursor()
+	print("inserDonation")
+	query = "INSERT INTO donation(userID, sum) VALUES (%s, %s)"
+	values = (int(getUserID(un)), int(val))
+	DBcursor.execute(query, values)
+	print (DBcursor)
+	DB.commit()
+	DBcursor.close()
 
 
 

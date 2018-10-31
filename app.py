@@ -34,10 +34,10 @@ def get_pw(username):
 	data = request.authorization
 	requestData = worker.getUserData(data)
 	DBdata = worker.executeQuery(requestData)
-	if worker.checkLogin(DBdata, requestData):
+	if worker.checkLogin(DBdata, requestData) == True:
 		return data.get('password')
 	else:
-		return None
+		return jsonify(success = 'false')
 
 
 
@@ -48,13 +48,12 @@ def get_pw(username):
 @auth.login_required
 def main():
 	print("hier2")
-	#app.logger.info('in login')
 	if(request.method=='POST'):
 		print("logged in")
 		return jsonify(success = 'true', messege = "login successful")
 
 	else:
-		return "arsch"
+		return "false"
 
 @app.route("/test", methods = ['GET'])
 def test():
@@ -67,39 +66,44 @@ def test():
 def signup():
 	
 	print("signup")
-	data = request.get_json()	
+	data = request.get_json()
 	messege = worker.checkSignupData(data)
 	if messege['success'] == "false":
-		return jsonify(messege)
+		return jsonify(messege), 205
 	else:
 		worker.createDonationRecord(data)
 		return jsonify(messege)
 
 
-@app.route("/up",methods=['GET'])
+@app.route("/donation",methods=['GET','POST'])
+@auth.login_required
 def upload():
-	mycursor = DB.cursor()
-	mycursor.execute("SELECT * FROM user;")
-	stru=""
-	for i in mycursor:
-		stru = str(i[0])+str(i[1])+str(i[2])+str(i[3])+str(i[4])+str(i[5])+str(i[7])+str(i[8])
-	mycursor.close()
-	return stru
+	print("donation")
+	user = auth.username()
+	donation = request.get_json()	
+	value = donation.get('donationValue')
+	worker.insertDonation(value, user)
+	return jsonify(success ='true')
 
 @app.route("/upload", methods = ['POST'])
 @auth.login_required
 def donation():
 	if request.method == "POST":
 		print("pictureupload")
-		print(request.authorization)
+		data = request.get_json()
 		unArg = auth.username()
+		
+		uploader.createExpenseRecord(data, unArg)
 		print ("username: " + unArg)
-		if 'file' not in request.files:
+		
+		if 'file' not in data:
 			print("no file sent")
 			return "no file sent"
 		else:
-			picFile = request.files['file']
-			if uploader.savePicture(picFile, unArg):
+			print("file found")
+			pic = data.get('file')
+
+			if uploader.savePicture(pic, unArg):
 				return jsonify(success = 'true')
 			else:
 				return jsonify(success = 'false')
@@ -111,12 +115,17 @@ def donation():
 @auth.login_required
 def getStats():
 	
-	unArg = auth.username()
-	personalSum = int(stats.getPersonalExpenseStat(unArg))
-	globalSum = int(stats.getGlobalExpanseStat()) 
+	data = request.authorization
+	unArg = data.get('username')
+	print(unArg)
+
 	
 	
-	return 1
+
+	
+
+	
+	return jsonify(success = "e", expenseItems = "{\"amount\":\"h\", \"date\":\"h\", \"description\":\"h\"}", donationItems = "{\"amount\":\"h\", \"date\":\"h\"}"), 200
 
 
 
